@@ -1,15 +1,6 @@
 import os
-import base64
-import hashlib
-import getpass
 import subprocess
 import sys
-from concurrent.futures import ThreadPoolExecutor, as_completed
-from Crypto.Cipher import AES
-from Crypto.Util.Padding import pad
-from tqdm import tqdm
-import pyfiglet
-from termcolor import colored
 
 # Функция для установки необходимых пакетов
 def install(package):
@@ -26,6 +17,17 @@ def check_and_install(package):
 required_packages = ['pycryptodome', 'tqdm', 'pyfiglet', 'termcolor']
 for package in required_packages:
     check_and_install(package)
+
+# Импортируем библиотеки после их установки
+import base64
+import hashlib
+import getpass
+from concurrent.futures import ThreadPoolExecutor, as_completed
+from Crypto.Cipher import AES
+from Crypto.Util.Padding import pad
+from tqdm import tqdm
+import pyfiglet
+from termcolor import colored
 
 def generate_key():
     username = getpass.getuser()
